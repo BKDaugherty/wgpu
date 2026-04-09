@@ -106,7 +106,8 @@ pub(in crate::back::glsl) const fn glsl_built_in(
         }
         // compute
         Bi::GlobalInvocationId => "gl_GlobalInvocationID",
-        Bi::GlobalInvocationIndex => unimplemented!(),
+        // GlobalInvocationIndex is a virtual built-in and is polyfilled before this function is called.
+        Bi::GlobalInvocationIndex => unreachable!(),
         Bi::LocalInvocationId => "gl_LocalInvocationID",
         Bi::LocalInvocationIndex => "gl_LocalInvocationIndex",
         Bi::WorkGroupId => "gl_WorkGroupID",

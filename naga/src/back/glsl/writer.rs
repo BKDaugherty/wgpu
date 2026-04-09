@@ -1352,12 +1352,20 @@ impl<'a, W: Write> Writer<'a, W> {
                         writeln!(self.out, ");")?;
                     }
                     _ => {
-                        let varying_name = VaryingName {
-                            binding: arg.binding.as_ref().unwrap(),
-                            stage,
-                            options: VaryingOptions::from_writer_options(self.options, false),
-                        };
-                        writeln!(self.out, "{varying_name};")?;
+                        let binding = arg.binding.as_ref().unwrap();
+                        if let Some(crate::BuiltIn::GlobalInvocationIndex) = binding.to_built_in() {
+                            writeln!(
+                                self.out,
+                                "gl_GlobalInvocationID.x + (gl_GlobalInvocationID.y * gl_NumWorkGroups.x) + (gl_GlobalInvocationID.z * gl_WorkGroupSize.x * gl_NumWorkGroups.x * gl_WorkGroupSize.y * gl_NumWorkGroups.y);",
+                            )?;
+                        } else {
+                            let varying_name = VaryingName {
+                                binding,
+                                stage,
+                                options: VaryingOptions::from_writer_options(self.options, false),
+                            };
+                            writeln!(self.out, "{varying_name};")?;
+                        }
                     }
                 }
             }

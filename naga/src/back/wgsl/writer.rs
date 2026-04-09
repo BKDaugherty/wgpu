@@ -297,6 +297,7 @@ impl<W: Write> Writer<W> {
             draw_index: bool,
             ray_tracing_pipeline: bool,
             per_vertex: bool,
+            linear_indexing: bool,
         }
         let mut needed = RequiredEnabled {
             mesh_shaders: module.uses_mesh_shaders(),
@@ -344,6 +345,9 @@ impl<W: Write> Writer<W> {
                 | crate::BuiltIn::WorldToObject,
             ) => {
                 needed.ray_tracing_pipeline = true;
+            }
+            crate::Binding::BuiltIn(crate::BuiltIn::GlobalInvocationIndex) => {
+                needed.linear_indexing = true;
             }
             _ => {}
         };
@@ -459,6 +463,10 @@ impl<W: Write> Writer<W> {
         }
         if needed.per_vertex {
             writeln!(self.out, "enable wgpu_per_vertex;")?;
+            any_written = true;
+        }
+        if needed.linear_indexing {
+            writeln!(self.out, "enable linear_indexing;")?;
             any_written = true;
         }
         if any_written {

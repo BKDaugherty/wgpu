@@ -214,6 +214,8 @@ bitflags::bitflags! {
         const MEMORY_DECORATION_COHERENT = 1 << 41;
         /// Support for the `@volatile` memory decoration on storage buffers.
         const MEMORY_DECORATION_VOLATILE = 1 << 42;
+        /// Support for the `workgroup_index` and `global_invocation_index` builtins.
+        const LINEAR_INDEXING = 1 << 43;
     }
 }
 
@@ -236,6 +238,7 @@ impl Capabilities {
             Self::COOPERATIVE_MATRIX => Some(Ext::WgpuCooperativeMatrix),
             Self::RAY_TRACING_PIPELINE => Some(Ext::WgpuRayTracingPipeline),
             Self::PER_VERTEX => Some(Ext::PerVertex),
+            Self::LINEAR_INDEXING => Some(Ext::LinearIndexing),
             _ => None,
         }
     }

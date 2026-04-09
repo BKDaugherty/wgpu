@@ -175,6 +175,10 @@ pub fn features_to_naga_capabilities(
         Caps::MEMORY_DECORATION_VOLATILE,
         features.contains(wgt::Features::MEMORY_DECORATION_VOLATILE),
     );
+    caps.set(
+        Caps::LINEAR_INDEXING,
+        features.contains(wgt::Features::LINEAR_INDEXING),
+    );
     caps
 }
 

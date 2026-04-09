@@ -1673,6 +1673,7 @@ impl dispatch::InstanceInterface for ContextWebGpu {
                     "pointer_composite_access" => {
                         Some(crate::WgslLanguageFeatures::PointerCompositeAccess)
                     }
+                    "linear_indexing" => Some(crate::WgslLanguageFeatures::LinearIndexing),
                     _ => None,
                 })
                 .for_each(|wlf| {

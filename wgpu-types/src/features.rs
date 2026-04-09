@@ -89,6 +89,9 @@ mod webgpu_impl {
 
     #[doc(hidden)]
     pub const WEBGPU_FEATURE_PRIMITIVE_INDEX: u64 = 1 << 17;
+
+    #[doc(hidden)]
+    pub const WEBGPU_FEATURE_LINEAR_INDEXING: u64 = 1 << 18;
 }
 
 macro_rules! bitflags_array_impl {
@@ -1811,6 +1814,10 @@ bitflags_array! {
         /// remain compatible with previous wgpu behavior.
         #[name("primitive-index", "shader-primitive-index")]
         const PRIMITIVE_INDEX = WEBGPU_FEATURE_PRIMITIVE_INDEX;
+
+        /// TODO: Docs
+        #[name("linear-indexing")]
+        const LINEAR_INDEXING = WEBGPU_FEATURE_LINEAR_INDEXING;
     }
 }
 

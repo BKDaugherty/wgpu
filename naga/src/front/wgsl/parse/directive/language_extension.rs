@@ -17,6 +17,7 @@ impl LanguageExtension {
     const PACKED4X8_INTEGER_DOT_PRODUCT: &'static str = "packed_4x8_integer_dot_product";
     const UNRESTRICTED_POINTER_PARAMETERS: &'static str = "unrestricted_pointer_parameters";
     const POINTER_COMPOSITE_ACCESS: &'static str = "pointer_composite_access";
+    const LINEAR_INDEXING: &'static str = "linear_indexing";
 
     /// Convert from a sentinel word in WGSL into its associated [`LanguageExtension`], if possible.
     pub fn from_ident(s: &str) -> Option<Self> {
@@ -32,6 +33,9 @@ impl LanguageExtension {
             }
             Self::POINTER_COMPOSITE_ACCESS => {
                 Self::Implemented(ImplementedLanguageExtension::PointerCompositeAccess)
+            }
+            Self::LINEAR_INDEXING => {
+                Self::Implemented(ImplementedLanguageExtension::LinearIndexing)
             }
             _ => return None,
         })
@@ -57,6 +61,7 @@ pub enum ImplementedLanguageExtension {
     ReadOnlyAndReadWriteStorageTextures,
     Packed4x8IntegerDotProduct,
     PointerCompositeAccess,
+    LinearIndexing,
 }
 
 impl ImplementedLanguageExtension {
@@ -65,6 +70,7 @@ impl ImplementedLanguageExtension {
         Self::ReadOnlyAndReadWriteStorageTextures,
         Self::Packed4x8IntegerDotProduct,
         Self::PointerCompositeAccess,
+        Self::LinearIndexing,
     ];
 
     /// Returns slice of all variants of [`ImplementedLanguageExtension`].
@@ -84,6 +90,7 @@ impl ImplementedLanguageExtension {
             ImplementedLanguageExtension::PointerCompositeAccess => {
                 LanguageExtension::POINTER_COMPOSITE_ACCESS
             }
+            ImplementedLanguageExtension::LinearIndexing => LanguageExtension::LINEAR_INDEXING,
         }
     }
 }

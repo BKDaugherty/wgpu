@@ -899,6 +899,9 @@ impl dispatch::InstanceInterface for ContextWgpuCore {
                     ImplementedLanguageExtension::PointerCompositeAccess => {
                         crate::WgslLanguageFeatures::PointerCompositeAccess
                     }
+                    ImplementedLanguageExtension::LinearIndexing => {
+                        crate::WgslLanguageFeatures::LinearIndexing
+                    }
                 }
             },
         )

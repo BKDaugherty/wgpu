@@ -168,7 +168,8 @@ impl crate::BuiltIn {
             Self::SampleMask => "SV_Coverage",
             // compute
             Self::GlobalInvocationId => "SV_DispatchThreadID",
-            Self::GlobalInvocationIndex => unimplemented!(),
+            // GlobalInvocationIndex is polyfilled before we reach `to_hlsl_str`.
+            Self::GlobalInvocationIndex => unreachable!(),
             Self::LocalInvocationId => "SV_GroupThreadID",
             Self::LocalInvocationIndex => "SV_GroupIndex",
             Self::WorkGroupId => "SV_GroupID",

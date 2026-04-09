@@ -463,6 +463,7 @@ impl<W: fmt::Write> super::Writer<'_, W> {
             arg_name: indices_name,
             members: Vec::new(),
             local_invocation_index_name: None,
+            global_invocation_id_name: None,
         })
     }
 }

@@ -78,6 +78,7 @@ pub(super) struct EntryPointBinding {
     /// Members of generated structure
     pub(super) members: Vec<EpStructMember>,
     pub(super) local_invocation_index_name: Option<String>,
+    pub(super) global_invocation_id_name: Option<String>,
 }
 
 pub(super) struct EntryPointInterface {
@@ -140,7 +141,6 @@ const fn is_subgroup_builtin_binding(binding: &Option<crate::Binding>) -> bool {
             | crate::BuiltIn::SubgroupId
     )
 }
-
 /// Information for how to generate a `binding_array<sampler>` access.
 struct BindingArraySamplerInfo {
     /// Variable name of the sampler heap
@@ -615,7 +615,10 @@ impl<'a, W: fmt::Write> super::Writer<'a, W> {
         stage: Option<(ShaderStage, Io)>,
     ) -> BackendResult {
         let is_per_primitive = match *binding {
-            Some(crate::Binding::BuiltIn(builtin)) if !is_subgroup_builtin_binding(binding) => {
+            Some(crate::Binding::BuiltIn(builtin))
+                if !is_subgroup_builtin_binding(binding)
+                    && builtin != crate::BuiltIn::GlobalInvocationIndex =>
+            {
                 if builtin == crate::BuiltIn::ViewIndex
                     && self.options.shader_model < ShaderModel::V6_1
                 {
@@ -624,6 +627,7 @@ impl<'a, W: fmt::Write> super::Writer<'a, W> {
                         ShaderModel::V6_1,
                     ));
                 }
+
                 if let Some(builtin_str) = builtin.to_hlsl_str()? {
                     write!(self.out, " : {builtin_str}")?;
                 }
@@ -676,6 +680,8 @@ impl<'a, W: fmt::Write> super::Writer<'a, W> {
         writeln!(self.out, " {{")?;
         let mut local_invocation_index_name = None;
         let mut subgroup_id_used = false;
+        let mut global_invocation_index_used = false;
+        let mut global_invocation_id_name = None;
         for m in members.iter() {
             // Sanity check that each IO member is a built-in or is assigned a
             // location. Also see note about nesting in `write_ep_input_struct`.
@@ -688,10 +694,24 @@ impl<'a, W: fmt::Write> super::Writer<'a, W> {
                 Some(crate::Binding::BuiltIn(crate::BuiltIn::LocalInvocationIndex)) => {
                     local_invocation_index_name = Some(m.name.clone());
                 }
+                // This relies on GlobalInvocationIndex coming before
+                Some(crate::Binding::BuiltIn(crate::BuiltIn::GlobalInvocationIndex)) => {
+                    global_invocation_index_used = true;
+                }
+                Some(crate::Binding::BuiltIn(crate::BuiltIn::GlobalInvocationId)) => {
+                    global_invocation_id_name = Some(m.name.clone());
+                }
                 _ => (),
             }
 
-            if is_subgroup_builtin_binding(&m.binding) {
+            if is_subgroup_builtin_binding(&m.binding)
+                || matches!(
+                    m.binding,
+                    Some(crate::Binding::BuiltIn(
+                        crate::BuiltIn::GlobalInvocationIndex
+                    ))
+                )
+            {
                 continue;
             }
             write!(self.out, "{}", back::INDENT)?;
@@ -707,6 +727,16 @@ impl<'a, W: fmt::Write> super::Writer<'a, W> {
             let name = self.namer.call("local_invocation_index");
             writeln!(self.out, "{}uint {name} : SV_GroupIndex;", back::INDENT)?;
             local_invocation_index_name = Some(name);
+        }
+
+        if global_invocation_index_used && global_invocation_id_name.is_none() {
+            let name = self.namer.call("global_invocation_id");
+            writeln!(
+                self.out,
+                "{}uint3 {name} : SV_DispatchThreadID;",
+                back::INDENT
+            )?;
+            global_invocation_id_name = Some(name);
         }
         writeln!(self.out, "}};")?;
         writeln!(self.out)?;
@@ -729,6 +759,7 @@ impl<'a, W: fmt::Write> super::Writer<'a, W> {
             ty_name: struct_name,
             members,
             local_invocation_index_name,
+            global_invocation_id_name,
         })
     }
 
@@ -870,10 +901,15 @@ impl<'a, W: fmt::Write> super::Writer<'a, W> {
         Ok(EntryPointInterface {
             input: if !func.arguments.is_empty()
                 && (stage == ShaderStage::Fragment
-                    || func
-                        .arguments
-                        .iter()
-                        .any(|arg| is_subgroup_builtin_binding(&arg.binding)))
+                    || func.arguments.iter().any(|arg| {
+                        is_subgroup_builtin_binding(&arg.binding)
+                            || matches!(
+                                arg.binding,
+                                Some(crate::Binding::BuiltIn(
+                                    crate::BuiltIn::GlobalInvocationIndex
+                                ))
+                            )
+                    }))
             {
                 Some(self.write_ep_input_struct(module, func, stage, ep_name)?)
             } else {
@@ -929,6 +965,27 @@ impl<'a, W: fmt::Write> super::Writer<'a, W> {
                     // When writing SubgroupId, we always guarantee that local_invocation_index_name is written
                     ep_input.local_invocation_index_name.as_ref().unwrap()
                 )?;
+            }
+            Some(crate::Binding::BuiltIn(crate::BuiltIn::GlobalInvocationIndex)) => {
+                let global_invocation_id = format!(
+                    "{}.{}", ep_input.arg_name,
+                    // When writing GlobalInvocationIndex, we always guarantee that global_invocation_id is written
+                    ep_input.global_invocation_id_name.as_ref().expect("Should have global_invocation_id_name written if we have global_invocation_index")
+                );
+
+                // Note: despite their names (`FIRST_VERTEX` and `FIRST_INSTANCE`),
+                // in compute shaders the special constants contain the number
+                // of workgroups, which we are using here.
+                write!(
+                    self.out,
+                    "{}.x + ({}.y * {} * {SPECIAL_CBUF_VAR}.{SPECIAL_FIRST_VERTEX}) + ({}.z * {} * {SPECIAL_CBUF_VAR}.{SPECIAL_FIRST_VERTEX} * {} * {SPECIAL_CBUF_VAR}.{SPECIAL_FIRST_INSTANCE})",
+                    global_invocation_id,
+                    global_invocation_id,
+                    ep.workgroup_size[0],
+                    global_invocation_id,
+                    ep.workgroup_size[1],
+                    ep.workgroup_size[2],
+                )?
             }
             Some(crate::Binding::Location {
                 interpolation: Some(crate::Interpolation::PerVertex),

@@ -1891,6 +1891,23 @@ impl Interface {
             .ok_or(StageError::MissingEntryPoint(pair.1))
             .map(|ep| ep.dual_source_blending)
     }
+
+    pub fn uses_global_invocation_index(&self, entry_point_name: &str) -> bool {
+        self.entry_points
+            .get(&(naga::ShaderStage::Compute, entry_point_name.to_string()))
+            .map(|ep| {
+                ep.inputs
+                    .iter()
+                    .any(|v| matches!(v, Varying::BuiltIn(BuiltIn::GlobalInvocationIndex)))
+            })
+            .unwrap_or(false)
+    }
+
+    pub fn get_workgroup_size(&self, entry_point_name: &str) -> Option<[u32; 3]> {
+        self.entry_points
+            .get(&(naga::ShaderStage::Compute, entry_point_name.to_string()))
+            .map(|ep| ep.workgroup_size)
+    }
 }
 
 pub fn check_color_attachment_count(

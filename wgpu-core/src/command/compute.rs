@@ -129,6 +129,8 @@ pub enum DispatchError {
     InvalidGroupSize { current: [u32; 3], limit: u32 },
     #[error(transparent)]
     BindingSizeTooSmall(#[from] LateMinBufferBindingSizeMismatch),
+    #[error("GlobalInvocationIndex would overflow if used with these parameters.")]
+    GlobalInvocationIndexWouldOverflow,
 }
 
 impl WebGpuError for DispatchError {
@@ -920,6 +922,42 @@ fn dispatch(state: &mut State, groups: [u32; 3]) -> Result<(), ComputePassErrorI
         .device
         .limits
         .max_compute_workgroups_per_dimension;
+
+    // TODO are these safe assumptions? Seems okay given `state.is_ready()`
+    // but nothing there seems to assume that the `interface` to the `ShaderModule` exists?
+    let pipeline = state.pipeline.as_ref().expect("must have");
+    let interface = pipeline
+        ._shader_module
+        .interface
+        .interface()
+        .expect("must have");
+
+    // TODO: How to get entry point name from interface? It seems like I should be able to get this from the
+    // ComputePipeline or the ComputePipeline's descriptor but I can't find a handle to it.
+    let entry_point_name = interface
+        .finalize_entry_point_name(naga::ShaderStage::Compute, Some("main"))
+        .expect("Temporary");
+
+    let uses_global_invocation_index = interface.uses_global_invocation_index(&entry_point_name);
+
+    if uses_global_invocation_index {
+        if let Some(workgroups) = interface.get_workgroup_size(&entry_point_name) {
+            let values = [workgroups, groups];
+            let (_, had_overflow) = values.iter().flatten().map(|u| (u, false)).fold(
+                (1, false),
+                |(a, had_overflow), (b, _)| {
+                    let result = u32::overflowing_mul(a, *b);
+                    (result.0, result.1 | had_overflow)
+                },
+            );
+
+            if had_overflow {
+                return Err(ComputePassErrorInner::Dispatch(
+                    DispatchError::GlobalInvocationIndexWouldOverflow,
+                ));
+            }
+        }
+    }
 
     if groups.iter().copied().any(|g| g > groups_size_limit) {
         return Err(ComputePassErrorInner::Dispatch(

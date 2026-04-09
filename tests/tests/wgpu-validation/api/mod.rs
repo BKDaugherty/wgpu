@@ -4,6 +4,7 @@ mod buffer_mapping;
 mod buffer_slice;
 mod command_buffer_actions;
 mod device;
+mod dispatch_workgroups;
 mod encoding;
 mod error_scopes;
 mod experimental;

@@ -7373,6 +7373,9 @@ template <typename A>
             }
 
             let mut local_invocation_index = None;
+            let mut global_invocation_index = None;
+            let mut global_invocation_id = None;
+            let mut num_workgroups = None;
 
             // Then pass the remaining arguments not included in the varyings
             // struct.
@@ -7389,6 +7392,15 @@ template <typename A>
 
                 if binding == &crate::Binding::BuiltIn(crate::BuiltIn::LocalInvocationIndex) {
                     local_invocation_index = Some(name_key);
+                } else if binding == &crate::Binding::BuiltIn(crate::BuiltIn::GlobalInvocationId) {
+                    global_invocation_id = Some(name_key);
+                } else if binding == &crate::Binding::BuiltIn(crate::BuiltIn::NumWorkGroups) {
+                    num_workgroups = Some(name_key);
+                } else if binding == &crate::Binding::BuiltIn(crate::BuiltIn::GlobalInvocationIndex)
+                {
+                    global_invocation_index = Some(name_key);
+                    // Global Invocation Index is polyfilled below using `NumWorkgroups` and `GlobalInvocationId`.
+                    continue;
                 }
 
                 let ty_name = TypeContext {
@@ -7435,6 +7447,27 @@ template <typename A>
                     binding: " [[thread_index_in_threadgroup]]".to_string(),
                     init: None,
                 });
+            }
+
+            // Ensure that global_invocation_index prerequisites exist.
+            if global_invocation_index.is_some() {
+                if global_invocation_id.is_none() {
+                    args.push(EntryPointArgument {
+                        ty_name: "uint3".to_string(),
+                        name: "__global_invocation_id".to_string(),
+                        binding: " [[thread_position_in_grid]]".to_string(),
+                        init: None,
+                    });
+                }
+
+                if num_workgroups.is_none() {
+                    args.push(EntryPointArgument {
+                        ty_name: "uint3".to_string(),
+                        name: "__num_workgroups".to_string(),
+                        binding: " [[threadgroups_per_grid]]".to_string(),
+                        init: None,
+                    });
+                }
             }
 
             // Those global variables used by this entry point and its callees
@@ -8021,6 +8054,15 @@ template <typename A>
                 )?;
             }
 
+            if let Some(global_invocation_index_name) = global_invocation_index {
+                self.global_invocation_index_polyfill(
+                    ep,
+                    global_invocation_index_name,
+                    global_invocation_id,
+                    num_workgroups,
+                )?;
+            }
+
             // Now take the arguments that we gathered into structs, and the
             // structs that we flattened into arguments, and emit local
             // variables with initializers that put everything back the way the
@@ -8353,6 +8395,31 @@ mod workgroup_mem_init {
 
             writeln!(self.out, "{level}}}")?;
             self.write_barrier(crate::Barrier::WORK_GROUP, level)
+        }
+
+        pub(super) fn global_invocation_index_polyfill(
+            &mut self,
+            ep: &EntryPoint,
+            global_invocation_index_name: &NameKey,
+            global_invocation_id: Option<&NameKey>,
+            num_workgroups: Option<&NameKey>,
+        ) -> BackendResult {
+            let gid = global_invocation_id
+                .map(|name_key| self.names[name_key].as_str())
+                .unwrap_or("__global_invocation_id");
+            let numwgs = num_workgroups
+                .map(|name_key| self.names[name_key].as_str())
+                .unwrap_or("__num_workgroups");
+
+            writeln!(
+                self.out,
+                "{}uint {} = {gid}.x + ({gid}.y * {numwgs}.x) + ({gid}.z * {} * {numwgs}.x * {} * {numwgs}.y)",
+                back::Level(1),
+                self.names[global_invocation_index_name],
+                ep.workgroup_size[0],
+                ep.workgroup_size[1],
+            )?;
+            Ok(())
         }
 
         fn write_workgroup_variable_initialization(

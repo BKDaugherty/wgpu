@@ -726,7 +726,8 @@ impl ResolvedBinding {
                     Bi::SampleMask => "sample_mask",
                     // compute
                     Bi::GlobalInvocationId => "thread_position_in_grid",
-                    Bi::GlobalInvocationIndex => unimplemented!(),
+                    // GlobalInvocationIndex should be polyfilled before attempting to fmt.
+                    Bi::GlobalInvocationIndex => return Err(Error::UnsupportedBuiltIn(built_in)),
                     Bi::LocalInvocationId => "thread_position_in_threadgroup",
                     Bi::LocalInvocationIndex => "thread_index_in_threadgroup",
                     Bi::WorkGroupId => "threadgroup_position_in_grid",
@@ -930,6 +931,7 @@ pub fn supported_capabilities() -> crate::valid::Capabilities {
         // No DRAW_INDEX
         // No MEMORY_DECORATION_VOLATILE
         | Caps::MEMORY_DECORATION_COHERENT
+        | Caps::LINEAR_INDEXING
 }
 
 #[test]

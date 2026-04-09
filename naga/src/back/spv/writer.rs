@@ -3134,6 +3134,7 @@ impl Writer {
                     Bi::SampleMask => BuiltIn::SampleMask,
                     // compute
                     Bi::GlobalInvocationId => BuiltIn::GlobalInvocationId,
+                    Bi::GlobalInvocationIndex => unimplemented!(),
                     Bi::LocalInvocationId => BuiltIn::LocalInvocationId,
                     Bi::LocalInvocationIndex => BuiltIn::LocalInvocationIndex,
                     Bi::WorkGroupId => BuiltIn::WorkgroupId,

@@ -387,7 +387,7 @@ impl VaryingContext<'_> {
                         self.stage == St::Fragment,
                         *ty_inner == Ti::Scalar(crate::Scalar::U32),
                     ),
-                    Bi::LocalInvocationIndex => (
+                    Bi::LocalInvocationIndex | Bi::GlobalInvocationIndex => (
                         self.stage.compute_like() && !self.output,
                         *ty_inner == Ti::Scalar(crate::Scalar::U32),
                     ),

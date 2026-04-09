@@ -168,6 +168,7 @@ impl crate::BuiltIn {
             Self::SampleMask => "SV_Coverage",
             // compute
             Self::GlobalInvocationId => "SV_DispatchThreadID",
+            Self::GlobalInvocationIndex => unimplemented!(),
             Self::LocalInvocationId => "SV_GroupThreadID",
             Self::LocalInvocationIndex => "SV_GroupIndex",
             Self::WorkGroupId => "SV_GroupID",

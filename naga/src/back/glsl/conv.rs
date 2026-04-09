@@ -106,6 +106,7 @@ pub(in crate::back::glsl) const fn glsl_built_in(
         }
         // compute
         Bi::GlobalInvocationId => "gl_GlobalInvocationID",
+        Bi::GlobalInvocationIndex => unimplemented!(),
         Bi::LocalInvocationId => "gl_LocalInvocationID",
         Bi::LocalInvocationIndex => "gl_LocalInvocationIndex",
         Bi::WorkGroupId => "gl_WorkGroupID",

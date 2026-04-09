@@ -175,6 +175,7 @@ impl TryToWgsl for crate::BuiltIn {
             Bi::SampleIndex => "sample_index",
             Bi::SampleMask => "sample_mask",
             Bi::GlobalInvocationId => "global_invocation_id",
+            Bi::GlobalInvocationIndex => "global_invocation_index",
             Bi::LocalInvocationId => "local_invocation_id",
             Bi::LocalInvocationIndex => "local_invocation_index",
             Bi::WorkGroupId => "workgroup_id",

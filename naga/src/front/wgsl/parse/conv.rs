@@ -111,6 +111,7 @@ pub fn map_built_in(
         "sample_mask" => crate::BuiltIn::SampleMask,
         // compute
         "global_invocation_id" => crate::BuiltIn::GlobalInvocationId,
+        "global_invocation_index" => crate::BuiltIn::GlobalInvocationIndex,
         "local_invocation_id" => crate::BuiltIn::LocalInvocationId,
         "local_invocation_index" => crate::BuiltIn::LocalInvocationIndex,
         "workgroup_id" => crate::BuiltIn::WorkGroupId,
@@ -166,6 +167,9 @@ pub fn map_built_in(
         | crate::BuiltIn::PrimitiveCount
         | crate::BuiltIn::Primitives => {
             enable_extensions.require(ImplementedEnableExtension::WgpuMeshShader, span)?
+        }
+        crate::BuiltIn::GlobalInvocationIndex => {
+            enable_extensions.require(ImplementedEnableExtension::LinearIndexing, span)?
         }
         _ => {}
     }

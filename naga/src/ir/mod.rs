@@ -444,6 +444,8 @@ pub enum BuiltIn {
     /// Read in compute, task, and mesh shaders
     GlobalInvocationId,
     /// Read in compute, task, and mesh shaders
+    GlobalInvocationIndex,
+    /// Read in compute, task, and mesh shaders
     LocalInvocationId,
     /// Read in compute, task, and mesh shaders
     LocalInvocationIndex,

@@ -726,6 +726,7 @@ impl ResolvedBinding {
                     Bi::SampleMask => "sample_mask",
                     // compute
                     Bi::GlobalInvocationId => "thread_position_in_grid",
+                    Bi::GlobalInvocationIndex => unimplemented!(),
                     Bi::LocalInvocationId => "thread_position_in_threadgroup",
                     Bi::LocalInvocationIndex => "thread_index_in_threadgroup",
                     Bi::WorkGroupId => "threadgroup_position_in_grid",
